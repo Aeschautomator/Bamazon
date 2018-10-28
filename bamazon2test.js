@@ -5,7 +5,7 @@ let connection = mysql.createConnection({
     host: "localhost",
     user: "root",
     password: "root",
-    database: "bamazonproducts_db",
+    database: "bamazon_db",
     port: 3306,
   });
 
@@ -13,7 +13,7 @@ let connection = mysql.createConnection({
     if (error) {
       console.log("error connecting: " + error.stack);
     }
-      console.log("listing on port 8889");
+      console.log("listing on port 3306");
 
       products();
   });

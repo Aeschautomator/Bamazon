@@ -1,104 +1,84 @@
-var mysql = require("mysql");
 var inquirer = require("inquirer");
+var mysql = require("mysql");
 
-// create the connection infomration for the sql database
 var connection = mysql.createConnection({
-    host:"localhost",
-    user:"root",
-    
-    // Your port; if not 3306
-    port:3306,
-
-    // Your password
+    host: "localhost",
+    port: 3306,
+    user: "root",
     password: "root",
-    database: "bamazonBD"
+    database: "bamazon_db"
 });
 
-// connect to the mysql server and sql database
-connection.connect(function(err) {
+connection.connect(function (err) {
     if (err) throw err;
-    // run the start function after the connection is made to prompt the user
-    start();
+    displayStock();
 });
 
-// function which prompts the user for what action they should take
-function start() {
-    inquirer
-    .prompt({
-        name:"purchase",
-        type:"rawlist",
-        message: "Please select your item by id number, press q to quit.",
-        validate: function (value){
-            return !is NaN(value) || value.toLowerCase() === "q";
-        }     
-    } 
-]};
+function displayStock() {
+    console.log("Products available: \n");
+    connection.query("SELECT * FROM products", function (err, res) {
+        if (err) throw err;
+        for (var i = 0; i < res.length; i++) {
+            console.log(`
+            =======
+            Product id: ${res[i].item_id}
+            Item: ${res[i].product_name}
+            Price: ${res[i].price}
+            =======
+            `);     
+        }
+        pickProduct();
+    });
 
-.then((value)) => {
-    userResponse(value.choice);
-    let id = parseInt(value.choice);
-    let product = itemQuantity(id, inventory);
+}
 
-    if (product) {
-        customerQuantity(product);
-    } else {
-        console.log("That item is not in stock.");
-        products();
-    }
-  });
-}  
-
-let customerQuantity = (product) => {
-    inquirer ([
-        {
-            type: "input",
-            name: "quantity",
-            message: "Select Purchase Quantity?",
-            validate: function(value) {
-                return value > 0 || value.toLowerCase() === "q";                
+function pickProduct() {
+    connection.query("SELECT * FROM products", function (err, results) {
+        if(err) throw err;
+        var choiceArray = [];
+        for(var i = 0; i < results.length; i++){
+            choiceArray.push(results[i].item_id.toString());
+        }
+        inquirer.prompt([
+            {
+                name: "productChoice",
+                type: "list",
+                message: "Please pick a product to purchase by [Product ID]",
+                choices: choiceArray
+            },
+            {
+                name: "quantityChoice",
+                type: "input",
+                message: "How Many Would you like to purchase?"
             }
-        }
-    ])
-    .then ((value) => {
-        userRespones(value.quantity);
-        var quantity = parseInt(value.quantity);
-
-        if(quantity> product.stock_quantity) {
-            console.log("Insufficient quantity, order must be less than " + product.stock_quantity);
-            products();
-        }else {
-        placeOrder(product, quantity);
-        }
+        ])
+        .then(function (answer) {
+            var productSelected;
+            for (var k = 0; k < results.length; k++) {
+                if (results[k].item_id === parseInt(answer.productChoice)) {
+                    productSelected = results[k];
+                }
+            }
+            if (productSelected.stock_quantity > answer.quantityChoice) {
+                connection.query(
+                    "UPDATE products SET ? WHERE ?",
+                    [
+                        {
+                            stock_quantity: productSelected.stock_quantity - answer.quantityChoice
+                        },
+                        {
+                            item_id: productSelected.item_id
+                        }
+                    ],
+                    function (error) {
+                        if (error) throw error;
+                        console.log(`Thank you for purchasing: ${productSelected.product_name}
+                                     You have spent \$${productSelected.price * answer.quantityChoice}`);
+                    }
+                )
+            } else {
+                console.log("We do not have enough stock to fulfil your purchase, please enter a lower quantity or try again later.");
+            }
+        });
     });
 }
-
-let placeOrder = (product, quantity) => {
-    connection.query(
-        "UPDATE products SET stock_quantity = stock_quantity - ? WHERE item_id = ?",
-        [quantity, product.item_id],
-        (error, response) => {
-            console.log (" You have purchased a quantity of " + quantity " " + product.product_name);
-            products();
-        }
-    );
-}
-
-let itemQuantity = (id, inventory) => {
-    for (var i = 0; i < inventory.length; i++) {
-        return inventory[i];
-     }
-   }
-    return null;
-}
-
-let itemQuantity = (id, inventory) => {
-    for (var i = 0; < inventory.length; i++) {
-        if (inventory[i].item_id === id) {
-            return inventory[i]; 
-            
-        }
-    }
-    return null;
-}
-
-let userResponse
