@@ -23,7 +23,8 @@ function displayStock() {
             =======
             Product id: ${res[i].item_id}
             Item: ${res[i].product_name}
-            Price: ${res[i].price}
+            Price: ${res[i].price_cost}
+            stock_quantity: ${res[i].stock_quantity}
             =======
             `);     
         }
